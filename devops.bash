@@ -111,7 +111,6 @@ main(){
 			config_pkg
 			scp_pkg
 			deploy_pkg
-			test_pkg
 			;;
 		rollback)
 			rollback $DEPLOY_VER
