@@ -122,6 +122,9 @@ main(){
 		rollback_list)
 			rollback_list
 			;;
+		test_pkg)
+            test_pkg
+            ;;
 		*)
 			usage
 			;;

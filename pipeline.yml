@@ -1,0 +1,48 @@
+node{
+  try {
+    gitlabCommitStatus(name: "Commit Buid"){
+    stage('拉取代码'){
+        git branch: 'master', credentialsId: '29265fc5-7457-4a12-9a3c-b0b42fd5a5e9', url: 'http://192.168.3.179/root/demo.git'
+    }
+  }
+    stage('代码编译'){
+        echo '代码编译'
+    }
+    stage('代码质量扫描'){
+        withSonarQubeEnv('sonarqube'){
+            sh   '/usr/local/sonar-scanner/bin/sonar-scanner'
+        }
+    }
+    stage('上传代码存储'){
+        echo '上传代码存储'
+        sh 'ssh 192.168.3.176 "[ -d /data/pkg/devops-demo-sit-stage ] && echo yes || mkdir -p /data/pkg/devops-demo-sit-stage"'
+        sh 'tar -czPf /tmp/devops-demo-sit-stage.tar.gz .  && scp /tmp/devops-demo-sit-stage.tar.gz 192.168.3.176:/data/pkg/devops-demo-sit-stage && rm -f  /tmp/devops-demo-sit-stage.tar.gz  '
+    }
+    stage('SIT自动化部署'){
+        echo '自动化部署'
+        sh 'ssh root@192.168.3.176 "/bin/bash -x /scripts/deploy.sh  SIT deploy"'
+    }
+    stage('自动化测试'){
+        echo '自动化测试'
+         sh 'ssh root@192.168.3.176 "/bin/bash -x /scripts/deploy.sh  SIT test_pkg"'
+    }
+    stage('邮件通知'){
+        echo "Email"
+        emailext body: '''你好：你的项目 $PROJECT_NAME - Build # $BUILD_NUMBER - $BUILD_STATUS:
+        Check console output at $BUILD_URL to view the results.''', subject: 'jenkins通知：$PROJECT_NAME - Build # $BUILD_NUMBER - $BUILD_STATUS!', to: 'shichao@scajy.cn' 
+    }
+
+  } catch (e){
+      currentBuild.result = "FAILED"
+      notifyFaild()
+      throw e
+  }
+}
+
+
+def notifyFaild(){
+    
+    emailext body: '''你好：你的项目构建失败，请查看 $PROJECT_NAME - Build # $BUILD_NUMBER - $BUILD_STATUS:
+
+Check console output at $BUILD_URL to view the results.''', subject: '你好：你的项目构建失败，请查看$PROJECT_NAME - Build # $BUILD_NUMBER - $BUILD_STATUS:', to: 'shichao@scajy.cn'
+}
