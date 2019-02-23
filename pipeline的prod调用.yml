@@ -1,0 +1,31 @@
+node{
+  try {
+    stage('自动化部署'){
+        echo '自动化部署'
+        sh 'ssh root@192.168.3.176 "/scripts/deploy.sh  ${DEPLOY_ENV} ${DEPLOY_TYPE} ${DEPLOY_VER} "'
+    }
+	stage('自动化测试'){
+        echo '自动化测试'
+         sh 'ssh root@192.168.3.176 "/bin/bash -x /scripts/deploy.sh  ${DEPLOY_ENV} test_pkg"'
+    }
+
+    stage('邮件通知'){
+        echo "Email"
+        emailext body: '''你好：你的项目 $PROJECT_NAME - Build # $BUILD_NUMBER - $BUILD_STATUS:
+        Check console output at $BUILD_URL to view the results.''', subject: 'jenkins通知：$PROJECT_NAME - Build # $BUILD_NUMBER - $BUILD_STATUS!', to: 'shichao@scajy.cn' 
+    }
+
+  } catch (e){
+      currentBuild.result = "FAILED"
+      notifyFaild()
+      throw e
+  }
+}
+
+
+def notifyFaild(){
+    
+    emailext body: '''你好：你的项目构建失败，请查看 $PROJECT_NAME - Build # $BUILD_NUMBER - $BUILD_STATUS:
+
+Check console output at $BUILD_URL to view the results.''', subject: '你好：你的项目构建失败，请查看$PROJECT_NAME - Build # $BUILD_NUMBER - $BUILD_STATUS:', to: 'shichao@scajy.cn'
+}
